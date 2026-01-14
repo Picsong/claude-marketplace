@@ -16,7 +16,8 @@ class CacheManager:
     """缓存管理器"""
 
     CACHE_DIR = os.path.expanduser("~/.claude/skills/apifox-skill/cache")
-    CACHE_EXPIRY = 24 * 3600  # 24 小时
+    # 注意：缓存不再自动过期，用户通过 refresh_oas 命令手动更新
+    CACHE_EXPIRY = 24 * 3600  # 保留常量以兼容旧代码，但不再使用
 
     def __init__(self, cache_dir: str = None):
         """
@@ -38,7 +39,7 @@ class CacheManager:
         检查 OAS 缓存是否有效
 
         Returns:
-            缓存是否存在且未过期
+            缓存文件是否存在（不再检查过期时间）
         """
         oas_file = os.path.join(self.cache_dir, "oas.json")
         meta_file = os.path.join(self.cache_dir, "oas_meta.json")
@@ -47,11 +48,11 @@ class CacheManager:
             return False
 
         try:
-            with open(meta_file, 'r', encoding='utf-8') as f:
-                meta = json.load(f)
-
-            cached_at = meta.get('cached_at', 0)
-            return (time.time() - cached_at) < self.CACHE_EXPIRY
+            # 只检查文件是否存在，不再检查过期时间
+            # 用户可以通过 refresh_oas 命令手动更新缓存
+            with open(oas_file, 'r', encoding='utf-8') as f:
+                json.load(f)
+            return True
         except Exception:
             return False
 
@@ -166,7 +167,7 @@ class CacheManager:
             'cache_dir': self.cache_dir,
             'oas_exists': os.path.exists(oas_file),
             'meta_exists': os.path.exists(meta_file),
-            'is_valid': self.is_cache_valid(),
+            'is_valid': self.is_cache_valid(),  # 现在只检查文件是否存在
         }
 
         if os.path.exists(meta_file):
